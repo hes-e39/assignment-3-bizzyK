@@ -6,6 +6,7 @@ import Button from '../components/button/Button';
 import TimerComponent from '../components/timers/Timer';
 import { TimerStatus, useTimerContext } from '../context/TimerContext';
 
+
 const TimersView = () => {
     const { state, dispatch } = useTimerContext();
     const { timers = [], activeTimerIndex, timerStatus, globalTimer } = state;
@@ -117,7 +118,6 @@ const TimersView = () => {
                     <div key={timerObj.id} className="timer-wrapper">
                         <TimerComponent
                             {...timerObj}
-                            rounds={timerObj.rounds}
                             isActive={index === activeTimerIndex}
                             timerStatus={timerStatus}
                             globalTimer={globalTimer}
@@ -128,7 +128,7 @@ const TimersView = () => {
                         <Button
                             type="danger"
                             label="Remove"
-                            onClick={() => dispatch({ type: 'REMOVE_TIMER', payload: index })}
+                            onClick={() => dispatch({type: 'REMOVE_TIMER', payload: index})}
                             icon={faTrash}
                         />
                     </div>

@@ -7,32 +7,39 @@ import { v4 as uuidv4 } from 'uuid';
 import Button from '../components/button/Button';
 import { useTimerContext, TimerStatus } from '../context/TimerContext';
 import { encodeTimersToURL, decodeTimersFromURL } from '../utils/urlHelpers';
+import { useParams } from 'react-router-dom';
 
 export type TimerType = 'stopwatch' | 'countdown' | 'xy' | 'tabata';
 
-const AddTimer = () => {
-    const [timerType, setTimerType] = useState<TimerType>('stopwatch');
-    const [minutes, setMinutes] = useState(0);
-    const [seconds, setSeconds] = useState(10);
-    const [roundTimeMinutes, setRoundTimeMinutes] = useState(1);
-    const [roundTimeSeconds, setRoundTimeSeconds] = useState(0);
-    const [workTimeMinutes, setWorkTimeMinutes] = useState(0);
-    const [workTimeSeconds, setWorkTimeSeconds] = useState(20);
-    const [restTimeMinutes, setRestTimeMinutes] = useState(0);
-    const [restTimeSeconds, setRestTimeSeconds] = useState(10);
-    const [rounds, setRounds] = useState(1);
-    const [name, setName] = useState('');
-    const [error, setError] = useState('');
+const AddTimer: React.FC = () => {
+    const { id } = useParams<{ id: string }>();
     const { state, dispatch } = useTimerContext();
+
+    const editingIndex = id ? state.timers.findIndex(timer => timer.id === id) : -1;
+    const editingTimer = editingIndex >= 0 ? state.timers[editingIndex] : undefined;
+    if (id && !editingTimer) {
+        return <div>Error: Timer not found.</div>;
+    }
+    const [timerType, setTimerType] = useState<TimerType>(editingTimer?.type || 'stopwatch');
+    const [minutes, setMinutes] = useState(editingTimer ? Math.floor(editingTimer.duration / 60) : 0);
+    const [seconds, setSeconds] = useState(editingTimer ? editingTimer.duration % 60 : 10);
+    const [roundTimeMinutes, setRoundTimeMinutes] = useState(editingTimer ? Math.floor((editingTimer.roundTime || 0) / 60) : 1);
+    const [roundTimeSeconds, setRoundTimeSeconds] = useState(editingTimer ? (editingTimer.roundTime || 0) % 60 : 0);
+    const [workTimeMinutes, setWorkTimeMinutes] = useState(editingTimer ? Math.floor((editingTimer.workTime || 0) / 60) : 0);
+    const [workTimeSeconds, setWorkTimeSeconds] = useState(editingTimer ? (editingTimer.workTime || 0) % 60 : 20);
+    const [restTimeMinutes, setRestTimeMinutes] = useState(editingTimer ? Math.floor((editingTimer.restTime || 0) / 60) : 0);
+    const [restTimeSeconds, setRestTimeSeconds] = useState(editingTimer ? (editingTimer.restTime || 0) % 60 : 10);
+    const [rounds, setRounds] = useState(editingTimer?.rounds || 1);
+    const [name, setName] = useState(editingTimer?.name || '');
+    const [error, setError] = useState('');
     const navigate = useNavigate();
 
-    const handleAddTimer = () => {
+    const handleAddOrUpdateTimer = () => {
         const duration = minutes * 60 + seconds;
         const roundTime = roundTimeMinutes * 60 + roundTimeSeconds;
         const workTime = workTimeMinutes * 60 + workTimeSeconds;
         const restTime = restTimeMinutes * 60 + restTimeSeconds;
 
-        // Input validation
         if (timerType === 'stopwatch' || timerType === 'countdown') {
             if (duration <= 0) {
                 setError('Duration must be greater than 0.');
@@ -48,8 +55,8 @@ const AddTimer = () => {
 
         setError('');
 
-        const newTimer = {
-            id: uuidv4(),
+        const updatedTimer = {
+            id: editingTimer?.id || uuidv4(),
             type: timerType,
             duration,
             roundTime,
@@ -58,13 +65,23 @@ const AddTimer = () => {
             rounds,
             name: name.trim() || `Timer ${state.timers.length + 1}`,
             state: 'not running' as const,
-            addedAt: Date.now(),
-            currentRound: 1,
+            addedAt: editingTimer?.addedAt || Date.now(),
+            currentRound: editingTimer?.currentRound || 1,
         };
 
-        // Add timer and update URL
-        const updatedTimers = [...state.timers, newTimer];
-        dispatch({ type: 'ADD_TIMER', payload: newTimer });
+        if (editingIndex !== undefined) {
+            // Update existing timer
+            dispatch({ type: 'UPDATE_TIMER', payload: { index: editingIndex, updatedTimer } });
+        } else {
+            // Add new timer
+            dispatch({ type: 'ADD_TIMER', payload: updatedTimer });
+        }
+
+        // Update URL
+        const updatedTimers = editingIndex !== undefined
+            ? state.timers.map((t, idx) => (idx === editingIndex ? updatedTimer : t))
+            : [...state.timers, updatedTimer];
+
         const urlParams = encodeTimersToURL(updatedTimers);
         window.history.replaceState({}, '', `${window.location.pathname}?${urlParams}`);
 
@@ -151,7 +168,7 @@ const AddTimer = () => {
                     <form
                         onSubmit={e => {
                             e.preventDefault();
-                            handleAddTimer();
+                            handleAddOrUpdateTimer();
                         }}
                     >
                         <div className="form-group">
@@ -171,7 +188,8 @@ const AddTimer = () => {
                                 {renderTimeInput('Round Time', roundTimeMinutes, roundTimeSeconds, setRoundTimeMinutes, setRoundTimeSeconds, 'roundTime')}
                                 <div className="form-group">
                                     <label htmlFor="rounds">Number of Rounds:</label>
-                                    <input id="rounds" type="number" className="input" min="1" value={rounds} onChange={e => setRounds(Number.parseInt(e.target.value || '1'))} />
+                                    <input id="rounds" type="number" className="input" min="1" value={rounds}
+                                           onChange={e => setRounds(Number.parseInt(e.target.value || '1'))}/>
                                 </div>
                             </>
                         )}
@@ -182,19 +200,21 @@ const AddTimer = () => {
                                 {renderTimeInput('Rest Time', restTimeMinutes, restTimeSeconds, setRestTimeMinutes, setRestTimeSeconds, 'restTime')}
                                 <div className="form-group">
                                     <label htmlFor="rounds">Number of Rounds:</label>
-                                    <input id="rounds" type="number" className="input" min="1" value={rounds} onChange={e => setRounds(Number.parseInt(e.target.value || '1'))} />
+                                    <input id="rounds" type="number" className="input" min="1" value={rounds}
+                                           onChange={e => setRounds(Number.parseInt(e.target.value || '1'))}/>
                                 </div>
                             </>
                         )}
 
                         <div className="form-group">
                             <label htmlFor="name">Name (optional):</label>
-                            <input id="name" type="text" className="input" placeholder="e.g., Warm-Up" value={name} onChange={e => setName(e.target.value)} />
+                            <input id="name" type="text" className="input" placeholder="e.g., Warm-Up" value={name}
+                                   onChange={e => setName(e.target.value)}/>
                         </div>
 
                         <div className="form-buttons">
-                            <Button htmlType="submit" label="Add Timer" icon={faPlus} />
-                            <Button type="secondary" label="Cancel" icon={faTimes} onClick={() => navigate('/')} />
+                            <Button htmlType="submit" label="Add Timer" icon={faPlus}/>
+                            <Button type="secondary" label="Cancel" icon={faTimes} onClick={() => navigate('/')}/>
                         </div>
                     </form>
                 </div>

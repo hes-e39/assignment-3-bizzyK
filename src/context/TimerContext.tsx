@@ -104,7 +104,7 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
         case 'UPDATE_TIMER': {
             const { index, updatedTimer } = action.payload;
             const updatedTimers = [...state.timers];
-            updatedTimers[index] = updatedTimer;
+            updatedTimers[index] = updatedTimer; // Replace the timer at the given index
             return { ...state, timers: updatedTimers };
         }
 

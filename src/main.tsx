@@ -23,6 +23,7 @@ const router = createHashRouter(
                 { index: true, element: <TimersView /> },
                 { path: "/docs", element: <DocumentationView /> },
                 { path: "/add", element: <AddTimer /> },
+                { path: "/edit-timer/:id", element: <AddTimer /> },
             ],
         },
     ],

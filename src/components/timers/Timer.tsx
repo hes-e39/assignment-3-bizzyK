@@ -5,6 +5,7 @@ import type React from 'react';
 import DisplayRounds from '../displayRounds/DisplayRounds';
 import DisplayTime from '../displayTime/DisplayTime';
 import { TimerStatus } from '../../context/TimerContext';
+import { useNavigate } from 'react-router-dom';
 
 interface TimerProps {
     id: string;
@@ -25,6 +26,7 @@ interface TimerProps {
 }
 
 const Timer: React.FC<TimerProps> = ({
+                                         id,
                                          name,
                                          type,
                                          workTime = 20,
@@ -39,6 +41,7 @@ const Timer: React.FC<TimerProps> = ({
                                          timerComplete,
                                          resetTimer,
                                      }) => {
+    const navigate = useNavigate();
     const [currentRound, setCurrentRound] = useState(1);
     const [isWorkInterval, setIsWorkInterval] = useState(true);
     const [totalTime, setTotalTime] = useState(
@@ -148,7 +151,7 @@ const Timer: React.FC<TimerProps> = ({
             <h2>{name}</h2>
             <h3>{title}</h3>
             {(type === 'tabata' || type === 'xy') && (
-                <DisplayRounds currentRound={currentRound} totalRounds={rounds} />
+                <DisplayRounds currentRound={currentRound} totalRounds={rounds}/>
             )}
             {type === 'tabata' && (
                 <div className={`interval-display ${isWorkInterval ? 'work' : 'rest'}`}>
@@ -160,8 +163,9 @@ const Timer: React.FC<TimerProps> = ({
             ) : timerStatus === TimerStatus.PAUSED && isActive ? (
                 <p>Paused</p>
             ) : (
-                <DisplayTime currentTime={timeDisplay} type={type} totalTime={totalTime} />
+                <DisplayTime currentTime={timeDisplay} type={type} totalTime={totalTime}/>
             )}
+            <button onClick={() => navigate(`/edit-timer/${id}`)}>Edit</button>
         </div>
     );
 };
