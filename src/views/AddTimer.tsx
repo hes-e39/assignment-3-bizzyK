@@ -1,12 +1,12 @@
 // AddTimer.tsx
 
-import { faPlus, faTimes, faSave } from '@fortawesome/free-solid-svg-icons';
-import { useState, useEffect } from 'react';
-import { useNavigate,useParams } from 'react-router-dom';
+import { faPlus, faSave, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import Button from '../components/button/Button';
-import { useTimerContext, TimerStatus } from '../context/TimerContext';
-import { encodeTimersToURL, decodeTimersFromURL } from '../utils/urlHelpers';
+import { TimerStatus, useTimerContext } from '../context/TimerContext';
+import { decodeTimersFromURL, encodeTimersToURL } from '../utils/urlHelpers';
 
 export type TimerType = 'stopwatch' | 'countdown' | 'xy' | 'tabata';
 
@@ -33,6 +33,8 @@ const AddTimer: React.FC = () => {
     const navigate = useNavigate();
 
     const handleAddOrUpdateTimer = () => {
+        const editingIndex = id ? state.timers.findIndex(timer => timer.id === id) : -1;
+
         const duration = minutes * 60 + seconds;
         const roundTime = roundTimeMinutes * 60 + roundTimeSeconds;
         const workTime = workTimeMinutes * 60 + workTimeSeconds;
@@ -51,6 +53,18 @@ const AddTimer: React.FC = () => {
             return;
         }
 
+        const trimmedName = name.trim();
+        const defaultName = `Timer ${state.timers.length + 1}`;
+        const timerName = trimmedName || defaultName;
+
+        // Validate for duplicate names
+        const isDuplicateName = state.timers.some((timer, index) => timer.name === timerName && index !== editingIndex);
+
+        if (isDuplicateName) {
+            setError('Timer name must be unique within the workout.');
+            return;
+        }
+
         setError('');
 
         const updatedTimer = {
@@ -61,16 +75,12 @@ const AddTimer: React.FC = () => {
             workTime,
             restTime,
             rounds,
-            name: name.trim() || `Timer ${state.timers.length + 1}`,
+            name: timerName,
             state: 'not running' as const,
-            addedAt: id ? editingTimer?.addedAt || Date.now() : Date.now(),
+            addedAt: id ? state.timers.find(timer => timer.id === id)?.addedAt || Date.now() : Date.now(),
         };
 
-        const editingIndex = id ? state.timers.findIndex(timer => timer.id === id) : -1;
-
-        const updatedTimers = editingIndex >= 0
-            ? state.timers.map((t, idx) => (idx === editingIndex ? updatedTimer : t))
-            : [...state.timers, updatedTimer];
+        const updatedTimers = editingIndex >= 0 ? state.timers.map((t, idx) => (idx === editingIndex ? updatedTimer : t)) : [...state.timers, updatedTimer];
 
         const urlParams = encodeTimersToURL(updatedTimers);
         window.history.replaceState({}, '', `${window.location.pathname}?${urlParams}`);
@@ -184,8 +194,7 @@ const AddTimer: React.FC = () => {
                                 {renderTimeInput('Round Time', roundTimeMinutes, roundTimeSeconds, setRoundTimeMinutes, setRoundTimeSeconds, 'roundTime')}
                                 <div className="form-group">
                                     <label htmlFor="rounds">Number of Rounds:</label>
-                                    <input id="rounds" type="number" className="input" min="1" value={rounds}
-                                           onChange={e => setRounds(Number.parseInt(e.target.value || '1'))}/>
+                                    <input id="rounds" type="number" className="input" min="1" value={rounds} onChange={e => setRounds(Number.parseInt(e.target.value || '1'))} />
                                 </div>
                             </>
                         )}
@@ -196,30 +205,23 @@ const AddTimer: React.FC = () => {
                                 {renderTimeInput('Rest Time', restTimeMinutes, restTimeSeconds, setRestTimeMinutes, setRestTimeSeconds, 'restTime')}
                                 <div className="form-group">
                                     <label htmlFor="rounds">Number of Rounds:</label>
-                                    <input id="rounds" type="number" className="input" min="1" value={rounds}
-                                           onChange={e => setRounds(Number.parseInt(e.target.value || '1'))}/>
+                                    <input id="rounds" type="number" className="input" min="1" value={rounds} onChange={e => setRounds(Number.parseInt(e.target.value || '1'))} />
                                 </div>
                             </>
                         )}
 
                         <div className="form-group">
                             <label htmlFor="name">Name (optional):</label>
-                            <input id="name" type="text" className="input" placeholder="e.g., Warm-Up" value={name}
-                                   onChange={e => setName(e.target.value)}/>
+                            <input id="name" type="text" className="input" placeholder="e.g., Warm-Up" value={name} onChange={e => setName(e.target.value)} />
                         </div>
 
                         <div className="form-buttons">
                             <Button
                                 htmlType="submit"
-                                label={editingTimer ? "Save Timer" : "Add Timer"} // Dynamic label
+                                label={editingTimer ? 'Save Timer' : 'Add Timer'} // Dynamic label
                                 icon={editingTimer ? faSave : faPlus} // Dynamic icon
                             />
-                            <Button
-                                type="secondary"
-                                label="Cancel"
-                                icon={faTimes}
-                                onClick={() => navigate('/')}
-                            />
+                            <Button type="secondary" label="Cancel" icon={faTimes} onClick={() => navigate('/')} />
                         </div>
                     </form>
                 </div>

@@ -1,8 +1,10 @@
 // DraggableTimer.tsx
 
+// biome-ignore lint/style/useImportType: <explanation>
 import React from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import TimerComponent from "../timers/Timer";
+// biome-ignore lint/style/useImportType: <explanation>
 import {Timer, TimerStatus} from '../../context/TimerContext';
 
 
