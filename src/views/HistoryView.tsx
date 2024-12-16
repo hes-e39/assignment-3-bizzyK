@@ -50,7 +50,7 @@ const HistoryView: React.FC = () => {
                 {['tabata', 'xy'].includes(timer.type) && timer.workTime !== undefined && (
                     <p><strong>Work Time:</strong> {formatTime(timer.workTime)}</p>
                 )}
-                {['tabata', 'xy'].includes(timer.type) && timer.restTime !== undefined && (
+                {['tabata'].includes(timer.type) && timer.restTime !== undefined && (
                     <p><strong>Rest Time:</strong> {formatTime(timer.restTime)}</p>
                 )}
             </>
@@ -60,7 +60,7 @@ const HistoryView: React.FC = () => {
     return (
         <div className="timers-container">
             {workoutHistory.length === 0 ? (
-                <p>No workouts completed yet.</p>
+                <div className="timer-message">💪 No workouts completed yet. Add a timer to get started. 💪</div>
             ) : (
                 workoutHistory.map((workout) => (
                     <div key={workout.id} className="workout-summary">
