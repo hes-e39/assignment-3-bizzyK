@@ -58,32 +58,6 @@ const initialState: TimerState = {
     globalTimer: 0
 };
 
-// // Utility function to reset an individual timer
-// const resetTimer = (timer: Timer): Timer => {
-//     // Determine reset time based on timer type
-//     const resetTime = (() => {
-//         switch (timer.type) {
-//             case 'xy':
-//                 return timer.roundTime || 0; // Reset to the round time
-//             case 'tabata':
-//                 return timer.workTime || 0; // Reset to the work interval
-//             case 'countdown':
-//             case 'stopwatch':
-//                 return timer.duration || 0; // Reset to the original duration
-//             default:
-//                 return 0;
-//         }
-//     })();
-//
-//     return {
-//         ...timer,
-//         state: 'not running', // Reset to the initial state
-//         currentRound: timer.type === 'xy' || timer.type === 'tabata' ? 1 : undefined, // Reset currentRound to 1
-//         duration: resetTime, // Reset the duration
-//     };
-// };
-
-
 // Reducer
 const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
     switch (action.type) {
@@ -161,17 +135,29 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
                 id: Date.now().toString(),
                 date: new Date().toISOString(),
                 totalDuration: calculateTotalWorkoutTime(state.timers),
-                timers: state.timers.map(({ id, name, type, duration, rounds, workTime, restTime }) => ({
-                    id,
-                    name,
-                    type,
-                    duration,
-                    rounds,
-                    workTime,
-                    restTime,
-                })),
+                timers: state.timers.map((timer) => {
+                    // Calculate total duration dynamically for 'xy' and 'tabata' timers
+                    let totalDuration = timer.duration;
+
+                    if (timer.type === 'xy' && timer.workTime !== undefined) {
+                        totalDuration = (timer.rounds || 1) * timer.workTime;
+                    } else if (timer.type === 'tabata' && timer.workTime !== undefined && timer.restTime !== undefined) {
+                        totalDuration = (timer.rounds || 1) * (timer.workTime + timer.restTime);
+                    }
+
+                    return {
+                        id: timer.id,
+                        name: timer.name,
+                        type: timer.type,
+                        duration: totalDuration,
+                        rounds: timer.rounds,
+                        workTime: timer.workTime,
+                        restTime: timer.restTime,
+                    };
+                }),
             };
 
+            // Save to localStorage
             const history = JSON.parse(localStorage.getItem('workoutHistory') || '[]');
             localStorage.setItem('workoutHistory', JSON.stringify([...history, completedWorkout]));
 
