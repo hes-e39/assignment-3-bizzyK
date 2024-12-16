@@ -5,7 +5,6 @@ import type React from 'react';
 import DisplayRounds from '../displayRounds/DisplayRounds';
 import DisplayTime from '../displayTime/DisplayTime';
 import { TimerStatus } from '../../context/TimerContext';
-import { useNavigate } from 'react-router-dom';
 
 interface TimerProps {
     id: string;
@@ -26,7 +25,6 @@ interface TimerProps {
 }
 
 const Timer: React.FC<TimerProps> = ({
-                                         id,
                                          name,
                                          type,
                                          workTime = 20,
@@ -41,7 +39,7 @@ const Timer: React.FC<TimerProps> = ({
                                          timerComplete,
                                          resetTimer,
                                      }) => {
-    const navigate = useNavigate();
+
     const [currentRound, setCurrentRound] = useState(1);
     const [isWorkInterval, setIsWorkInterval] = useState(true);
     const [totalTime, setTotalTime] = useState(
@@ -165,7 +163,6 @@ const Timer: React.FC<TimerProps> = ({
             ) : (
                 <DisplayTime currentTime={timeDisplay} type={type} totalTime={totalTime}/>
             )}
-            <button onClick={() => navigate(`/edit-timer/${id}`)}>Edit</button>
         </div>
     );
 };

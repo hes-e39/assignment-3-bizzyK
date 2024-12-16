@@ -51,6 +51,19 @@ body {
     margin: 0;
 }
 
+.workout-timers-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
+
+.workout-time,
+.remaining-time {
+    margin: 0 1rem;
+}
+
 .timer-message {
     display: flex;
     text-align: center;

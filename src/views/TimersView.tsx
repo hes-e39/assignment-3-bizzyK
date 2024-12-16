@@ -1,16 +1,19 @@
 // TimersView.tsx
 
-import { useEffect, useCallback } from 'react';
-import { faPlay, faPause, faRedo, faForward, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { useState, useEffect, useCallback } from 'react';
+import {faPlay, faPause, faRedo, faForward, faTrash, faEdit} from '@fortawesome/free-solid-svg-icons';
 import Button from '../components/button/Button';
 import { TimerStatus, useTimerContext } from '../context/TimerContext';
 import { encodeTimersToURL } from '../utils/urlHelpers'; // Ensure this is imported
-import DraggableTimer from '../components/timers/DraggableTimer'; // Import DraggableTimer
-
+import DraggableTimer from '../components/timers/DraggableTimer';
+import {useNavigate} from "react-router-dom"; // Import DraggableTimer
 
 const TimersView = () => {
     const {state, dispatch} = useTimerContext();
     const {timers = [], activeTimerIndex, timerStatus, globalTimer} = state;
+    const navigate = useNavigate();
+    // Local state for total countdown
+    const [remainingTime, setRemainingTime] = useState(0);
 
     // Calculate Total Workout Time
     const totalWorkoutTime = timers.reduce((total, timer) => {
@@ -23,11 +26,46 @@ const TimersView = () => {
         return total + timer.duration;
     }, 0);
 
+    // Update Remaining Time when workout starts
+    useEffect(() => {
+        if (timerStatus === TimerStatus.READY) {
+            setRemainingTime(totalWorkoutTime); // Initialize the remaining time
+        }
+    }, [timerStatus, totalWorkoutTime]);
+
+    // Timer Logic for global countdown
+    const runTotalCountdown = useCallback(() => {
+        if (timerStatus === TimerStatus.RUNNING && remainingTime > 0) {
+            setRemainingTime((prev) => prev - 1);
+        } else if (remainingTime === 0 && timerStatus === TimerStatus.RUNNING) {
+            dispatch({ type: 'COMPLETE_ALL' }); // Mark workout complete when countdown reaches zero
+        }
+    }, [timerStatus, remainingTime, dispatch]);
+
+    useEffect(() => {
+        if (timerStatus === TimerStatus.RUNNING) {
+            const intervalId = setInterval(() => {
+                runTotalCountdown();
+            }, 1000);
+            return () => clearInterval(intervalId);
+        }
+    }, [runTotalCountdown, timerStatus]);
+
+    // Control Handlers
+    const handleBeginWorkout = () => timers.length > 0 && dispatch({ type: 'START_TIMER', payload: 0 });
+    const handlePauseResumeWorkout = () => {
+        dispatch({
+            type: 'TOGGLE_TIMER',
+            payload: timerStatus === TimerStatus.PAUSED ? TimerStatus.RUNNING : TimerStatus.PAUSED,
+        });
+    };
+    const handleResetWorkout = () => dispatch({ type: 'RESET_TIMER_STATE' });
+
     // Format Time
     const formatTime = (totalSeconds: number): string => {
         const minutes = Math.floor(totalSeconds / 60);
         const seconds = totalSeconds % 60;
-        return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+        return `${minutes}m ${seconds}s`;
     };
 
     // Timer Logic
@@ -43,18 +81,6 @@ const TimersView = () => {
         }, 1000);
         return () => clearInterval(intervalId);
     }, [runTimer]);
-
-    // Control Handlers
-    const handleBeginWorkout = () => timers.length > 0 && dispatch({type: 'START_TIMER', payload: 0});
-
-    const handlePauseResumeWorkout = () => {
-        dispatch({
-            type: 'TOGGLE_TIMER',
-            payload: timerStatus === TimerStatus.PAUSED ? TimerStatus.RUNNING : TimerStatus.PAUSED,
-        });
-    };
-
-    const handleResetWorkout = () => dispatch({type: 'RESET_TIMER_STATE'});
 
     const handleTimerComplete = () => {
         if (activeTimerIndex !== null) {
@@ -92,7 +118,14 @@ const TimersView = () => {
     return (
         <div>
             <div className="workout-header">
-                <p>Total Workout Time: {formatTime(totalWorkoutTime)}</p>
+                <div className="workout-timers-info">
+                    <div className="workout-time">
+                        <strong>Total Workout Time:</strong> {formatTime(totalWorkoutTime)}
+                    </div>
+                    <div className="remaining-time">
+                        <strong>Remaining Time:</strong> {formatTime(remainingTime)}
+                    </div>
+                </div>
                 <div className="workout-controls">
                     <Button
                         label="Begin Workout"
@@ -141,12 +174,20 @@ const TimersView = () => {
                             timerComplete={handleTimerComplete}
                             resetTimer={handleResetGlobalTimer}
                         />
-                        <Button
-                            type="danger"
-                            label="Remove"
-                            onClick={() => dispatch({type: 'REMOVE_TIMER', payload: index})}
-                            icon={faTrash}
-                        />
+                        <div className="button-group">
+                            <Button
+                                type="primary"
+                                label="Edit"
+                                onClick={() => navigate(`/edit-timer/${timerObj.id}`)}
+                                icon={faEdit}
+                            />
+                            <Button
+                                type="danger"
+                                label="Remove"
+                                onClick={() => dispatch({type: 'REMOVE_TIMER', payload: index})}
+                                icon={faTrash}
+                            />
+                        </div>
                     </div>
                 ))}
             </div>

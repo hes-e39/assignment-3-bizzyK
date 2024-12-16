@@ -84,8 +84,6 @@ const AddTimer: React.FC = () => {
 
         const urlParams = encodeTimersToURL(updatedTimers);
         window.history.replaceState({}, '', `${window.location.pathname}?${urlParams}`);
-        console.log('Before URL Update:', state.timers);
-        console.log('Updated Timers:', updatedTimers);
         navigate('/');
     };
 

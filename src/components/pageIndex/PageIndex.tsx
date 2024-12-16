@@ -14,6 +14,7 @@ const PageIndex: React.FC = () => {
         '/': 'Timers',
         '/docs': 'Documentation',
         '/add': 'Add Timer',
+        '/history': 'History',
     };
 
     const pageTitle = titles[normalizedPath] || 'Assignment 2 - Elizabeth Koch';
@@ -39,24 +40,29 @@ const PageIndex: React.FC = () => {
             <nav className="app-navigation">
                 <ul>
                     <li>
-                        <NavLink to="/" className={({ isActive }) => (isActive ? 'active' : '')}>
+                        <NavLink to="/" className={({isActive}) => (isActive ? 'active' : '')}>
                             Timers
                         </NavLink>
                     </li>
                     <li>
-                        <NavLink to="/docs" className={({ isActive }) => (isActive ? 'active' : '')}>
+                        <NavLink to="/docs" className={({isActive}) => (isActive ? 'active' : '')}>
                             Documentation
                         </NavLink>
                     </li>
                     <li>
-                        <NavLink to="/add" className={({ isActive }) => (isActive ? 'active' : '')}>
+                        <NavLink to="/add" className={({isActive}) => (isActive ? 'active' : '')}>
                             Add Timer
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink to="/history" className={({isActive}) => (isActive ? 'active' : '')}>
+                            History
                         </NavLink>
                     </li>
                 </ul>
             </nav>
             <main className="app-main">
-                <Outlet />
+                <Outlet/>
             </main>
         </div>
     );

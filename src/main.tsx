@@ -10,21 +10,31 @@ import "./index.css";
 
 import TimersView from "./views/TimersView";
 import DocumentationView from "./views/DocumentationView";
+import HistoryView from "./views/HistoryView";
 import AddTimer from "./views/AddTimer";
 import PageIndex from "./components/pageIndex/PageIndex";
 import ErrorBoundary from "./components/errorBoundary/ErrorBoundary";
 import { TimerProvider } from "./context/TimerContext";
 
+// Error page for route-level errors
+const ErrorPage = () => (
+    <div className="error-page">
+        <h1>Something went wrong!</h1>
+        <p>Sorry, an unexpected error occurred. Please try again later.</p>
+    </div>
+);
+
 const router = createHashRouter([
     {
         path: "/",
         element: <PageIndex />,
-        errorElement: <div>An error occurred while loading this page.</div>,
+        errorElement: <ErrorPage />, // Dedicated error page for route-level errors
         children: [
             { index: true, element: <TimersView /> },
             { path: "/docs", element: <DocumentationView /> },
             { path: "/add", element: <AddTimer /> },
-            { path: "/edit-timer/:id", element: <AddTimer /> },
+            { path: "/history", element: <HistoryView /> },
+            { path: "/edit-timer/:id", element: <AddTimer /> }, // Add the edit timer route
         ],
     },
 ]);
