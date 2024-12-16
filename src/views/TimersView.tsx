@@ -3,13 +3,14 @@
 import { useEffect, useCallback } from 'react';
 import { faPlay, faPause, faRedo, faForward, faTrash } from '@fortawesome/free-solid-svg-icons';
 import Button from '../components/button/Button';
-import TimerComponent from '../components/timers/Timer';
 import { TimerStatus, useTimerContext } from '../context/TimerContext';
+import { encodeTimersToURL } from '../utils/urlHelpers'; // Ensure this is imported
+import DraggableTimer from '../components/timers/DraggableTimer'; // Import DraggableTimer
 
 
 const TimersView = () => {
-    const { state, dispatch } = useTimerContext();
-    const { timers = [], activeTimerIndex, timerStatus, globalTimer } = state;
+    const {state, dispatch} = useTimerContext();
+    const {timers = [], activeTimerIndex, timerStatus, globalTimer} = state;
 
     // Calculate Total Workout Time
     const totalWorkoutTime = timers.reduce((total, timer) => {
@@ -32,7 +33,7 @@ const TimersView = () => {
     // Timer Logic
     const runTimer = useCallback(() => {
         if (timerStatus === TimerStatus.RUNNING) {
-            dispatch({ type: 'SET_TIME', payload: globalTimer + 1 });
+            dispatch({type: 'SET_TIME', payload: globalTimer + 1});
         }
     }, [timerStatus, globalTimer, dispatch]);
 
@@ -44,7 +45,7 @@ const TimersView = () => {
     }, [runTimer]);
 
     // Control Handlers
-    const handleBeginWorkout = () => timers.length > 0 && dispatch({ type: 'START_TIMER', payload: 0 });
+    const handleBeginWorkout = () => timers.length > 0 && dispatch({type: 'START_TIMER', payload: 0});
 
     const handlePauseResumeWorkout = () => {
         dispatch({
@@ -53,7 +54,7 @@ const TimersView = () => {
         });
     };
 
-    const handleResetWorkout = () => dispatch({ type: 'RESET_TIMER_STATE' });
+    const handleResetWorkout = () => dispatch({type: 'RESET_TIMER_STATE'});
 
     const handleTimerComplete = () => {
         if (activeTimerIndex !== null) {
@@ -64,15 +65,28 @@ const TimersView = () => {
 
             // If it's the last timer, mark workout complete
             if (activeTimerIndex === timers.length - 1) {
-                dispatch({ type: 'COMPLETE_ALL' });
+                dispatch({type: 'COMPLETE_ALL'});
             }
         }
     };
 
     const handleResetGlobalTimer = () => {
         if (timerStatus === TimerStatus.RUNNING) {
-            dispatch({ type: 'SET_TIME', payload: 0 });
+            dispatch({type: 'SET_TIME', payload: 0});
         }
+    };
+
+    // Handle Timer Reordering
+    const moveTimer = (fromIndex: number, toIndex: number) => {
+        const updatedTimers = [...timers];
+        const [movedTimer] = updatedTimers.splice(fromIndex, 1);
+        updatedTimers.splice(toIndex, 0, movedTimer);
+
+        dispatch({ type: 'MOVE_TIMER', payload: { fromIndex, toIndex } });
+
+        // Use encodeTimersToURL to update the URL
+        const urlParams = encodeTimersToURL(updatedTimers);
+        window.history.replaceState({}, '', `${window.location.pathname}?${urlParams}`);
     };
 
     return (
@@ -116,12 +130,14 @@ const TimersView = () => {
             <div className="timers-container">
                 {timers.map((timerObj, index) => (
                     <div key={timerObj.id} className="timer-wrapper">
-                        <TimerComponent
-                            {...timerObj}
+                        <DraggableTimer
+                            key={timerObj.id}
+                            timer={timerObj}
+                            index={index}
+                            moveTimer={moveTimer}
                             isActive={index === activeTimerIndex}
                             timerStatus={timerStatus}
                             globalTimer={globalTimer}
-                            state={timerObj.state}
                             timerComplete={handleTimerComplete}
                             resetTimer={handleResetGlobalTimer}
                         />

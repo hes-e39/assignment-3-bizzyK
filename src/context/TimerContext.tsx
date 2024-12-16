@@ -39,6 +39,7 @@ type TimerAction =
     | { type: 'ADD_TIMER'; payload: Timer }
     | { type: 'REMOVE_TIMER'; payload: number }
     | { type: 'UPDATE_TIMER'; payload: { index: number; updatedTimer: Timer } }
+    | { type: 'MOVE_TIMER'; payload: { fromIndex: number; toIndex: number } }
     | { type: 'START_TIMER'; payload: number }
     | { type: 'TOGGLE_TIMER'; payload: TimerStatus }
     | { type: 'COMPLETE_CURRENT_TIMER'; payload: number }
@@ -85,6 +86,7 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
     switch (action.type) {
         // Add a timer
         case 'ADD_TIMER': {
+            console.log('Adding Timer:', action.payload);
             return {
                 ...state,
                 timers: [...state.timers, action.payload],
@@ -98,6 +100,17 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
                 ...state,
                 timers: updatedTimers,
                 activeTimerIndex: updatedTimers.length === 0 ? null : state.activeTimerIndex,
+            };
+        }
+
+        case 'MOVE_TIMER': {
+            const { fromIndex, toIndex } = action.payload;
+            const updatedTimers = [...state.timers];
+            const [movedTimer] = updatedTimers.splice(fromIndex, 1);
+            updatedTimers.splice(toIndex, 0, movedTimer);
+            return {
+                ...state,
+                timers: updatedTimers,
             };
         }
 

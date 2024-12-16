@@ -69,7 +69,7 @@ const AddTimer: React.FC = () => {
             currentRound: editingTimer?.currentRound || 1,
         };
 
-        if (editingIndex !== undefined) {
+        if (editingIndex >= 0) {
             // Update existing timer
             dispatch({ type: 'UPDATE_TIMER', payload: { index: editingIndex, updatedTimer } });
         } else {
@@ -78,13 +78,14 @@ const AddTimer: React.FC = () => {
         }
 
         // Update URL
-        const updatedTimers = editingIndex !== undefined
+        const updatedTimers = editingIndex >= 0
             ? state.timers.map((t, idx) => (idx === editingIndex ? updatedTimer : t))
             : [...state.timers, updatedTimer];
 
         const urlParams = encodeTimersToURL(updatedTimers);
         window.history.replaceState({}, '', `${window.location.pathname}?${urlParams}`);
-
+        console.log('Before URL Update:', state.timers);
+        console.log('Updated Timers:', updatedTimers);
         navigate('/');
     };
 
