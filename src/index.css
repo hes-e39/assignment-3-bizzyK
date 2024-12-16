@@ -146,6 +146,11 @@ button:not(:disabled):hover {
     background-color: var(--button-hover);
 }
 
+button:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
 /* Header for workout section */
 .workout-header {
     display: flex;
@@ -282,6 +287,7 @@ li a {
     color: var(--primary-color);
     text-decoration: none;
     font-size: 1.2rem;
+    transition: color 0.3s ease;
 }
 
 li a:hover {
@@ -378,16 +384,6 @@ input:checked + .slider:before {
     margin-bottom: 20px;
 }
 
-/* Link styling */
-li a {
-    color: var(--primary-color);
-    text-decoration: none;
-    font-size: 1.2rem;
-}
-
-li a:hover {
-    color: var(--button-hover);
-}
 
 ul {
     list-style: none;
@@ -446,4 +442,53 @@ th {
 .prop-table th {
     background-color: var(--panel-background);
     font-weight: bold;
+}
+
+.workout-card {
+    background: var(--panel-background);
+    color: var(--primary-color);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+
+.workout-date {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+
+.workout-duration {
+    font-size: 1em;
+    margin-bottom: 10px;
+}
+
+.timers-summary h4 {
+    margin-bottom: 10px;
+}
+
+.timers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+}
+
+.timer-card {
+    background: var(--panel-background);
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.timer-card h5 {
+    margin: 0 0 10px;
+    font-size: 1em;
+    color: var(--primary-color);
+}
+
+.timer-card p {
+    margin: 5px 0;
+    font-size: 0.9em;
+    color: var(--primary-color);
 }

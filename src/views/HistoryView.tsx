@@ -37,8 +37,8 @@ const HistoryView: React.FC = () => {
 
     const renderTimerDetails = (timer: TimerSummary) => {
         return (
-            <>
-                <p><strong>{timer.name}</strong> ({timer.type})</p>
+            <div className="timer-card">
+                <h5>{timer.name || 'Unnamed Timer'} ({timer.type})</h5>
                 <p><strong>Duration:</strong> {formatTime(timer.duration)}</p>
 
                 {/* Display rounds only for 'xy' or 'tabata' */}
@@ -53,7 +53,7 @@ const HistoryView: React.FC = () => {
                 {['tabata'].includes(timer.type) && timer.restTime !== undefined && (
                     <p><strong>Rest Time:</strong> {formatTime(timer.restTime)}</p>
                 )}
-            </>
+            </div>
         );
     };
 
@@ -68,13 +68,13 @@ const HistoryView: React.FC = () => {
                         <p><strong>Total Duration:</strong> {formatTime(workout.totalDuration)}</p>
                         <div className="timers-summary">
                             <h4>Timers:</h4>
-                            <ul>
+                            <div className="timers-grid">
                                 {workout.timers.map((timer) => (
-                                    <li key={timer.id} className="timer-item">
+                                    <div key={timer.id} className="timer-item">
                                         {renderTimerDetails(timer)}
-                                    </li>
+                                    </div>
                                 ))}
-                            </ul>
+                            </div>
                         </div>
                     </div>
                 ))
