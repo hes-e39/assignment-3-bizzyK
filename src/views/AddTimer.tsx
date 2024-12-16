@@ -1,13 +1,12 @@
 // AddTimer.tsx
 
-import { faPlus, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faTimes, faSave } from '@fortawesome/free-solid-svg-icons';
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate,useParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import Button from '../components/button/Button';
 import { useTimerContext, TimerStatus } from '../context/TimerContext';
 import { encodeTimersToURL, decodeTimersFromURL } from '../utils/urlHelpers';
-import { useParams } from 'react-router-dom';
 
 export type TimerType = 'stopwatch' | 'countdown' | 'xy' | 'tabata';
 
@@ -15,11 +14,10 @@ const AddTimer: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const { state, dispatch } = useTimerContext();
 
-    const editingIndex = id ? state.timers.findIndex(timer => timer.id === id) : -1;
-    const editingTimer = editingIndex >= 0 ? state.timers[editingIndex] : undefined;
-    if (id && !editingTimer) {
-        return <div>Error: Timer not found.</div>;
-    }
+    // Editing Logic
+    const editingTimer = id ? state.timers.find(timer => timer.id === id) : null;
+
+    // Timer Form State
     const [timerType, setTimerType] = useState<TimerType>(editingTimer?.type || 'stopwatch');
     const [minutes, setMinutes] = useState(editingTimer ? Math.floor(editingTimer.duration / 60) : 0);
     const [seconds, setSeconds] = useState(editingTimer ? editingTimer.duration % 60 : 10);
@@ -56,7 +54,7 @@ const AddTimer: React.FC = () => {
         setError('');
 
         const updatedTimer = {
-            id: editingTimer?.id || uuidv4(),
+            id: id || uuidv4(),
             type: timerType,
             duration,
             roundTime,
@@ -65,25 +63,24 @@ const AddTimer: React.FC = () => {
             rounds,
             name: name.trim() || `Timer ${state.timers.length + 1}`,
             state: 'not running' as const,
-            addedAt: editingTimer?.addedAt || Date.now(),
-            currentRound: editingTimer?.currentRound || 1,
+            addedAt: id ? editingTimer?.addedAt || Date.now() : Date.now(),
         };
 
-        if (editingIndex >= 0) {
-            // Update existing timer
-            dispatch({ type: 'UPDATE_TIMER', payload: { index: editingIndex, updatedTimer } });
-        } else {
-            // Add new timer
-            dispatch({ type: 'ADD_TIMER', payload: updatedTimer });
-        }
+        const editingIndex = id ? state.timers.findIndex(timer => timer.id === id) : -1;
 
-        // Update URL
         const updatedTimers = editingIndex >= 0
             ? state.timers.map((t, idx) => (idx === editingIndex ? updatedTimer : t))
             : [...state.timers, updatedTimer];
 
         const urlParams = encodeTimersToURL(updatedTimers);
         window.history.replaceState({}, '', `${window.location.pathname}?${urlParams}`);
+
+        if (editingIndex >= 0) {
+            dispatch({ type: 'UPDATE_TIMER', payload: { index: editingIndex, updatedTimer } });
+        } else {
+            dispatch({ type: 'ADD_TIMER', payload: updatedTimer });
+        }
+
         navigate('/');
     };
 
@@ -162,7 +159,7 @@ const AddTimer: React.FC = () => {
         <div className="timers-container">
             <div className="add-timer-page">
                 <div className="timer-wrapper">
-                    <h2>Add Timer</h2>
+                    <h2>{editingTimer ? 'Edit Timer' : 'Add Timer'}</h2>
                     {error && <p className="error-message">{error}</p>}
                     <form
                         onSubmit={e => {
@@ -212,8 +209,17 @@ const AddTimer: React.FC = () => {
                         </div>
 
                         <div className="form-buttons">
-                            <Button htmlType="submit" label="Add Timer" icon={faPlus}/>
-                            <Button type="secondary" label="Cancel" icon={faTimes} onClick={() => navigate('/')}/>
+                            <Button
+                                htmlType="submit"
+                                label={editingTimer ? "Save Timer" : "Add Timer"} // Dynamic label
+                                icon={editingTimer ? faSave : faPlus} // Dynamic icon
+                            />
+                            <Button
+                                type="secondary"
+                                label="Cancel"
+                                icon={faTimes}
+                                onClick={() => navigate('/')}
+                            />
                         </div>
                     </form>
                 </div>

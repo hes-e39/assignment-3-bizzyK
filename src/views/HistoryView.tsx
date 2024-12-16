@@ -1,6 +1,10 @@
 // HistoryView.tsx
 
 import { useEffect, useState } from 'react';
+import {useTimerContext} from '../context/TimerContext';
+import type {TimerType} from "./AddTimer.tsx";
+import {faRedo} from "@fortawesome/free-solid-svg-icons";
+import Button from "../components/button/Button.tsx";
 
 interface TimerSummary {
     id: string;
@@ -21,6 +25,7 @@ interface WorkoutSummary {
 
 const HistoryView: React.FC = () => {
     const [workoutHistory, setWorkoutHistory] = useState<WorkoutSummary[]>([]);
+    const { dispatch } = useTimerContext(); // Access the context to update timers
 
     useEffect(() => {
         const savedHistory = localStorage.getItem('workoutHistory');
@@ -33,6 +38,24 @@ const HistoryView: React.FC = () => {
         const minutes = Math.floor(totalSeconds / 60);
         const seconds = totalSeconds % 60;
         return `${minutes}m ${seconds}s`;
+    };
+
+    const repeatWorkout = (timers: TimerSummary[]) => {
+        const repeatedTimers = timers.map((timer) => ({
+            id: `${timer.id}-${Date.now()}`, // Generate a new unique ID
+            type: timer.type as TimerType, // Explicitly cast to TimerType
+            duration: timer.duration,
+            name: timer.name || 'Repeated Timer',
+            state: 'not running' as const,
+            addedAt: Date.now(),
+            rounds: timer.rounds,
+            workTime: timer.workTime,
+            restTime: timer.restTime,
+        }));
+
+        // Dispatch to reset the timer state and add the repeated timers
+        dispatch({ type: 'RESET_TIMER_STATE' }); // Clear any active timers
+        repeatedTimers.forEach((timer) => dispatch({ type: 'ADD_TIMER', payload: timer }));
     };
 
     const renderTimerDetails = (timer: TimerSummary) => {
@@ -75,6 +98,12 @@ const HistoryView: React.FC = () => {
                                     </div>
                                 ))}
                             </div>
+                            <Button
+                                type="primary"
+                                icon={faRedo}
+                                label="Repeat Workout"
+                                onClick={() => repeatWorkout(workout.timers)}
+                            />
                         </div>
                     </div>
                 ))

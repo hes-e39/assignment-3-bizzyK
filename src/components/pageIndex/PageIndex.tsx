@@ -15,9 +15,10 @@ const PageIndex: React.FC = () => {
         '/docs': 'Documentation',
         '/add': 'Add Timer',
         '/history': 'History',
+        '/edit-timer/:id': 'Edit Timer',
     };
 
-    const pageTitle = titles[normalizedPath] || 'Assignment 2 - Elizabeth Koch';
+    const pageTitle = titles[normalizedPath];
 
     // Update document title dynamically
     useEffect(() => {
