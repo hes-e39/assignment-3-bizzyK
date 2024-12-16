@@ -82,8 +82,23 @@ const TimersView = () => {
         return () => clearInterval(intervalId);
     }, [runTimer]);
 
+    // Add this inside TimersView.tsx
     const handleTimerComplete = () => {
         if (activeTimerIndex !== null) {
+            const currentTimer = timers[activeTimerIndex];
+
+            // Calculate the time to deduct based on the timer type
+            const timeToDeduct =
+                currentTimer.type === 'xy' && currentTimer.rounds && currentTimer.roundTime
+                    ? currentTimer.rounds * currentTimer.roundTime
+                    : currentTimer.type === 'tabata' && currentTimer.rounds && currentTimer.workTime && currentTimer.restTime
+                        ? currentTimer.rounds * (currentTimer.workTime + currentTimer.restTime)
+                        : currentTimer.duration;
+
+            // Deduct the time from remainingTime
+            setRemainingTime((prev) => Math.max(0, prev - timeToDeduct));
+
+            // Dispatch COMPLETE_CURRENT_TIMER to move to the next timer
             dispatch({
                 type: 'COMPLETE_CURRENT_TIMER',
                 payload: activeTimerIndex,
@@ -91,7 +106,7 @@ const TimersView = () => {
 
             // If it's the last timer, mark workout complete
             if (activeTimerIndex === timers.length - 1) {
-                dispatch({type: 'COMPLETE_ALL'});
+                dispatch({ type: 'COMPLETE_ALL' });
             }
         }
     };
