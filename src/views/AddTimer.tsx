@@ -1,12 +1,12 @@
 // AddTimer.tsx
 
 import { faPlus, faTimes } from '@fortawesome/free-solid-svg-icons';
-import { useState } from 'react';
-import type React from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import Button from '../components/button/Button';
-import { useTimerContext } from '../context/TimerContext';
+import { useTimerContext, TimerStatus } from '../context/TimerContext';
+import { encodeTimersToURL, decodeTimersFromURL } from '../utils/urlHelpers';
 
 export type TimerType = 'stopwatch' | 'countdown' | 'xy' | 'tabata';
 
@@ -32,26 +32,21 @@ const AddTimer = () => {
         const workTime = workTimeMinutes * 60 + workTimeSeconds;
         const restTime = restTimeMinutes * 60 + restTimeSeconds;
 
+        // Input validation
         if (timerType === 'stopwatch' || timerType === 'countdown') {
             if (duration <= 0) {
                 setError('Duration must be greater than 0.');
                 return;
             }
-        } else if (timerType === 'xy') {
-            if (roundTime <= 0 || rounds <= 0) {
-                setError('Round time and number of rounds must be greater than 0.');
-                return;
-            }
-        } else if (timerType === 'tabata') {
-            if (workTime <= 0 || restTime <= 0 || rounds <= 0) {
-                setError('Work time, rest time, and number of rounds must be greater than 0.');
-                return;
-            }
+        } else if (timerType === 'xy' && (roundTime <= 0 || rounds <= 0)) {
+            setError('Round time and number of rounds must be greater than 0.');
+            return;
+        } else if (timerType === 'tabata' && (workTime <= 0 || restTime <= 0 || rounds <= 0)) {
+            setError('Work time, rest time, and number of rounds must be greater than 0.');
+            return;
         }
-        setError('');
 
-        const nextNumber = state.timers.length + 1;
-        const defaultName = `Timer ${nextNumber}`;
+        setError('');
 
         const newTimer = {
             id: uuidv4(),
@@ -61,16 +56,44 @@ const AddTimer = () => {
             workTime,
             restTime,
             rounds,
-            name: name.trim() || defaultName,
+            name: name.trim() || `Timer ${state.timers.length + 1}`,
             state: 'not running' as const,
             addedAt: Date.now(),
             currentRound: 1,
         };
 
+        // Add timer and update URL
+        const updatedTimers = [...state.timers, newTimer];
         dispatch({ type: 'ADD_TIMER', payload: newTimer });
-        dispatch({ type: 'RESET_TIMER_STATE' });
+        const urlParams = encodeTimersToURL(updatedTimers);
+        window.history.replaceState({}, '', `${window.location.pathname}?${urlParams}`);
+
         navigate('/');
     };
+
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const timersFromUrl = urlParams.get('timers');
+        if (timersFromUrl) {
+            try {
+                const decodedTimers = decodeTimersFromURL(timersFromUrl);
+                if (Array.isArray(decodedTimers) && decodedTimers.length > 0) {
+                    dispatch({
+                        type: 'LOAD_STATE',
+                        payload: {
+                            timers: decodedTimers,
+                            timerStatus: TimerStatus.READY,
+                            activeTimerIndex: null, // Default value
+                            queueMode: 'sequential', // Default value
+                            globalTimer: 0, // Default value
+                        },
+                    });
+                }
+            } catch (error) {
+                console.error('Error parsing timers from URL:', error);
+            }
+        }
+    }, [dispatch]);
 
     const handleTimerTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const selectedType = e.target.value as TimerType;

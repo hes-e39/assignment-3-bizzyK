@@ -3,8 +3,9 @@
 import  { createContext, useReducer, useContext } from 'react';
 import type React from "react";
 import type { TimerType } from '../views/AddTimer';
+import { useEffect } from 'react';
 
-export enum TimerStatus{
+export enum TimerStatus {
     READY = 'READY',
     RUNNING = 'RUNNING',
     PAUSED = 'PAUSED',
@@ -27,21 +28,24 @@ export type Timer = {
 
 type TimerState = {
     timers: Timer[];
-    timerStatus: TimerStatus,
+    timerStatus: TimerStatus;
     activeTimerIndex: number | null;
     queueMode: 'sequential';
-    globalTimer: number
+    globalTimer: number;
+    lastSavedAt?: number; // Timestamp for last save
 };
 
 type TimerAction =
     | { type: 'ADD_TIMER'; payload: Timer }
     | { type: 'REMOVE_TIMER'; payload: number }
+    | { type: 'UPDATE_TIMER'; payload: { index: number; updatedTimer: Timer } }
     | { type: 'START_TIMER'; payload: number }
     | { type: 'TOGGLE_TIMER'; payload: TimerStatus }
     | { type: 'COMPLETE_CURRENT_TIMER'; payload: number }
     | { type: 'RESET_TIMER_STATE' }
-    | { type: 'SET_TIME', payload: number}
-    | { type: 'COMPLETE_ALL'};
+    | { type: 'SET_TIME'; payload: number }
+    | { type: 'COMPLETE_ALL' }
+    | { type: 'LOAD_STATE'; payload: TimerState };
 
 const initialState: TimerState = {
     timers: [],
@@ -81,8 +85,8 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
     switch (action.type) {
         // Add a timer
         case 'ADD_TIMER': {
-            return { 
-                ...state, 
+            return {
+                ...state,
                 timers: [...state.timers, action.payload],
             };
         }
@@ -97,82 +101,129 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
             };
         }
 
-        // Called to start globalTimer
-        case 'START_TIMER': {
-            return { 
-                ...state, 
-                activeTimerIndex: action.payload, 
-                timerStatus: TimerStatus.RUNNING, 
-                globalTimer: 0 
+        case 'UPDATE_TIMER': {
+            const { index, updatedTimer } = action.payload;
+            const updatedTimers = [...state.timers];
+            updatedTimers[index] = updatedTimer;
+            return { ...state, timers: updatedTimers };
+        }
+
+        // Load state only if not already loaded
+        case 'LOAD_STATE': {
+            return {
+                ...state,
+                timers: action.payload.timers || [],
+                timerStatus: action.payload.timerStatus || TimerStatus.READY,
+                activeTimerIndex: action.payload.activeTimerIndex ?? null,
+                queueMode: action.payload.queueMode || 'sequential',
+                globalTimer: action.payload.globalTimer || 0,
             };
         }
 
-        // Used to toggle pause/resume the timer
+            // Called to start globalTimer
+        case 'START_TIMER': {
+                return {
+                    ...state,
+                    activeTimerIndex: action.payload,
+                    timerStatus: TimerStatus.RUNNING,
+                    globalTimer: 0
+                };
+            }
+
+            // Used to toggle pause/resume the timer
         case 'TOGGLE_TIMER':
             return { ...state, timerStatus: action.payload};
 
-        // Called whenever an individual timer completes
+            // Called whenever an individual timer completes
         case 'COMPLETE_CURRENT_TIMER': {
-            const nextIndex = state.activeTimerIndex !== null ? state.activeTimerIndex + 1 : null;
+                const nextIndex = state.activeTimerIndex !== null ? state.activeTimerIndex + 1 : null;
 
-            return {
-                ...state,
-                timers: state.timers.map((timer, index) =>
-                    index === state.activeTimerIndex
-                        ? {
-                            ...timer,
-                            state: 'completed',
-                            currentRound: timer.type === 'xy' || timer.type === 'tabata' ? timer.rounds : undefined, // Set currentRound to max
-                        }
-                        : timer
-                ),
-                activeTimerIndex: nextIndex, // Move to the next timer or null if workout ends
-                globalTimer: 0, // Reset global timer
-            };
-        }
+                return {
+                    ...state,
+                    timers: state.timers.map((timer, index) =>
+                        index === state.activeTimerIndex
+                            ? {
+                                ...timer,
+                                state: 'completed',
+                                currentRound: timer.type === 'xy' || timer.type === 'tabata' ? timer.rounds : undefined, // Set currentRound to max
+                            }
+                            : timer
+                    ),
+                    activeTimerIndex: nextIndex, // Move to the next timer or null if workout ends
+                    globalTimer: 0, // Reset global timer
+                };
+            }
 
-        // Resets all timers
+            // Resets all timers
         case 'RESET_TIMER_STATE': {
             return {
                 ...state,
-                timers: state.timers.map(resetTimer), // Apply reset logic to all timers
-                activeTimerIndex: null, // Reset active timer index
-                globalTimer: 0, // Reset global timer
-                timerStatus: TimerStatus.READY, // Set status to READY
+                timers: state.timers.map(resetTimer),
+                activeTimerIndex: null,
+                globalTimer: 0,
+                timerStatus: TimerStatus.READY,
+                lastSavedAt: undefined, // Explicitly reset
             };
         }
 
-        // called every second while the app is running to increment globalTimer
+            // called every second while the app is running to increment globalTimer
         case 'SET_TIME': {
-            return {...state, globalTimer: action.payload}
-        }
-
-        // called once all timers are complete
-        case 'COMPLETE_ALL' : {
-            return {
-                ...state,
-                globalTimer: 0,
-                activeTimerIndex: 0,
-                timerStatus: TimerStatus.COMPLETE
+                return {...state, globalTimer: action.payload}
             }
-        }
+
+            // called once all timers are complete
+        case 'COMPLETE_ALL' : {
+                return {
+                    ...state,
+                    globalTimer: 0,
+                    activeTimerIndex: 0,
+                    timerStatus: TimerStatus.COMPLETE
+                }
+            }
 
         default:
             throw new Error(`Unhandled action type: ${(action as TimerAction).type}`);
-    }
-};
+        }
+    };
 
-const TimerContext = createContext<{ state: TimerState; dispatch: React.Dispatch<TimerAction> } | null>(null);
+    const TimerContext = createContext<{ state: TimerState; dispatch: React.Dispatch<TimerAction> } | null>(null);
 
-export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [state, dispatch] = useReducer(timerReducer, initialState);
-    return <TimerContext.Provider value={{ state, dispatch }}>{children}</TimerContext.Provider>;
-};
+    export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+        const [state, dispatch] = useReducer(timerReducer, initialState);
 
-export const useTimerContext = (): { state: TimerState; dispatch: React.Dispatch<TimerAction> } => {
-    const context = useContext(TimerContext);
-    if (!context) {
-        throw new Error('useTimerContext must be used within a TimerProvider');
-    }
-    return context;
-};
+        // Save state to local storage periodically
+        useEffect(() => {
+            const saveStateToLocalStorage = () => {
+                const { timers, timerStatus, activeTimerIndex, globalTimer } = state;
+                const stateToSave = {
+                    timers,
+                    timerStatus,
+                    activeTimerIndex,
+                    globalTimer,
+                    lastSavedAt: Date.now(), // Set lastSavedAt during save
+                };
+                localStorage.setItem('workoutState', JSON.stringify(stateToSave));
+            };
+            const intervalId = setInterval(saveStateToLocalStorage, 2000); // Save every 2 seconds
+            return () => clearInterval(intervalId);
+        }, [state]);
+
+        // Load state from local storage on app load
+        useEffect(() => {
+            const savedState = localStorage.getItem('workoutState');
+            if (savedState) {
+                const parsedState = JSON.parse(savedState) as TimerState;
+                dispatch({ type: 'LOAD_STATE', payload: parsedState });
+            }
+        }, []);
+
+        return <TimerContext.Provider value={{ state, dispatch }}>{children}</TimerContext.Provider>;
+    };
+
+    export const useTimerContext = (): { state: TimerState; dispatch: React.Dispatch<TimerAction> } => {
+        const context = useContext(TimerContext);
+        if (!context) {
+            throw new Error('useTimerContext must be used within a TimerProvider');
+        }
+        return context;
+    };
