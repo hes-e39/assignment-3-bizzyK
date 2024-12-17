@@ -220,7 +220,7 @@ const TimersView = () => {
                 {timerStatus === TimerStatus.COMPLETE ? (
                     <div className="timer-message">🎉 Congratulations! Your workout is complete! 🎉</div>
                 ) : timers.length === 0 ? (
-                    <div className="timer-message">💪 No timers configured. Add a timer to get started. 💪</div>
+                    <div className="timer-message">💪 You have no timers configured. Load a shared workout link or create new timers to get started! 💪</div>
                 ) : null}
             </div>
 
