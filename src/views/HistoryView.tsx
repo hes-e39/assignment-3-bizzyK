@@ -66,7 +66,9 @@ const HistoryView: React.FC = () => {
                 queueMode: 'sequential',
                 globalTimer: 0,
             },
-        });
+         });
+        // Navigate to the workout page
+        navigate('/');
     };
 
     const renderTimerDetails = (timer: TimerSummary) => {
