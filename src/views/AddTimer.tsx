@@ -54,12 +54,13 @@ const AddTimer: React.FC = () => {
         }
 
         const trimmedName = name.trim();
-        const defaultName = `Timer ${state.timers.length + 1}`;
-        const timerName = trimmedName || defaultName;
+
+        // Preserve existing name during edit if no new name is provided
+        const existingTimer = editingIndex >= 0 ? state.timers[editingIndex] : null;
+        const timerName = trimmedName || (editingIndex >= 0 ? existingTimer?.name : `Timer ${state.timers.length + 1}`);
 
         // Validate for duplicate names
         const isDuplicateName = state.timers.some((timer, index) => timer.name === timerName && index !== editingIndex);
-
         if (isDuplicateName) {
             setError('Timer name must be unique within the workout.');
             return;
@@ -75,9 +76,9 @@ const AddTimer: React.FC = () => {
             workTime,
             restTime,
             rounds,
-            name: timerName,
+            name: timerName || `Timer ${state.timers.length + 1}`, // Always ensure name is a string
             state: 'not running' as const,
-            addedAt: id ? state.timers.find(timer => timer.id === id)?.addedAt || Date.now() : Date.now(),
+            addedAt: editingIndex >= 0 && existingTimer?.addedAt !== undefined ? existingTimer.addedAt : Date.now(),
         };
 
         const updatedTimers = editingIndex >= 0 ? state.timers.map((t, idx) => (idx === editingIndex ? updatedTimer : t)) : [...state.timers, updatedTimer];

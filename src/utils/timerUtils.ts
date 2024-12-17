@@ -1,6 +1,6 @@
 // timerUtils.ts
 
-import { Timer } from '../context/TimerContext';
+import type { Timer } from '../context/TimerContext';
 
 export const calculateResetTime = (timer: Timer): number => {
     switch (timer.type) {

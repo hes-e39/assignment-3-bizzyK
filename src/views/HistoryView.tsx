@@ -2,6 +2,7 @@
 
 import { faRedo } from '@fortawesome/free-solid-svg-icons';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // Import navigate
 import { v4 as uuidv4 } from 'uuid';
 import Button from '../components/button/Button.tsx';
 import { TimerStatus, useTimerContext } from '../context/TimerContext';
@@ -27,6 +28,7 @@ interface WorkoutSummary {
 const HistoryView: React.FC = () => {
     const [workoutHistory, setWorkoutHistory] = useState<WorkoutSummary[]>([]);
     const { dispatch } = useTimerContext(); // Access the context to update timers
+    const navigate = useNavigate(); // Initialize navigate function
 
     useEffect(() => {
         const savedHistory = localStorage.getItem('workoutHistory');
@@ -47,7 +49,7 @@ const HistoryView: React.FC = () => {
             id: uuidv4(), // Generate a new unique ID
             type: timer.type as TimerType, // Explicitly cast to TimerType
             duration: timer.duration,
-            name: timer.name || 'Repeated Timer',
+            name: timer.name || `Timer ${timers.indexOf(timer) + 1}`,
             state: 'not running' as const,
             addedAt: Date.now(),
             rounds: timer.rounds,
@@ -67,6 +69,8 @@ const HistoryView: React.FC = () => {
                 globalTimer: 0,
             },
         });
+        // Navigate to the workout page
+        navigate('/');
     };
 
     const renderTimerDetails = (timer: TimerSummary) => {

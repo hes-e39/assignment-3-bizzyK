@@ -1,11 +1,10 @@
 //TimerContext.tsx
 
-import  { createContext, useReducer, useContext } from 'react';
-import type React from "react";
-import type { TimerType } from '../views/AddTimer';
+import { createContext, useContext, useReducer } from 'react';
+import type React from 'react';
 import { useEffect } from 'react';
 import { calculateTotalWorkoutTime, resetTimer } from '../utils/timerUtils';
-
+import type { TimerType } from '../views/AddTimer';
 
 export enum TimerStatus {
     READY = 'READY',
@@ -55,7 +54,7 @@ const initialState: TimerState = {
     activeTimerIndex: null,
     queueMode: 'sequential',
     timerStatus: TimerStatus.READY,
-    globalTimer: 0
+    globalTimer: 0,
 };
 
 // Reducer
@@ -65,12 +64,9 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
             return { ...state, timers: [...state.timers, action.payload] };
 
         case 'REMOVE_TIMER': {
-            const updatedTimers = state.timers.filter((_timer, index) => index !== action.payload);
-            return {
-                ...state,
-                timers: updatedTimers,
-                activeTimerIndex: updatedTimers.length === 0 ? null : state.activeTimerIndex,
-            };
+            const updatedTimers = [...state.timers];
+            updatedTimers.splice(action.payload, 1); // Remove timer by index
+            return { ...state, timers: updatedTimers };
         }
 
         case 'MOVE_TIMER': {
@@ -91,7 +87,11 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
         case 'LOAD_STATE':
             return {
                 ...state,
-                timers: action.payload.timers || [],
+                timers: action.payload.timers.map(timer => ({
+                    ...timer,
+                    id: timer.id || crypto.randomUUID(), // Ensure valid ID
+                    addedAt: timer.addedAt || Date.now(), // Ensure addedAt exists
+                })),
                 timerStatus: action.payload.timerStatus || TimerStatus.READY,
                 activeTimerIndex: action.payload.activeTimerIndex ?? null,
                 queueMode: action.payload.queueMode || 'sequential',
@@ -108,11 +108,7 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
             const nextIndex = state.activeTimerIndex !== null ? state.activeTimerIndex + 1 : null;
             return {
                 ...state,
-                timers: state.timers.map((timer, index) =>
-                    index === state.activeTimerIndex
-                        ? { ...timer, state: 'completed', currentRound: timer.rounds }
-                        : timer
-                ),
+                timers: state.timers.map((timer, index) => (index === state.activeTimerIndex ? { ...timer, state: 'completed', currentRound: timer.rounds } : timer)),
                 activeTimerIndex: nextIndex,
                 globalTimer: 0,
             };
@@ -135,7 +131,7 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
                 id: Date.now().toString(),
                 date: new Date().toISOString(),
                 totalDuration: calculateTotalWorkoutTime(state.timers),
-                timers: state.timers.map((timer) => {
+                timers: state.timers.map(timer => {
                     // Calculate total duration dynamically for 'xy' and 'tabata' timers
                     let totalDuration = timer.duration;
 
@@ -183,8 +179,8 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             const stateToSave = { timers, timerStatus, activeTimerIndex, globalTimer, lastSavedAt: Date.now() };
             localStorage.setItem('workoutState', JSON.stringify(stateToSave));
         };
-        const intervalId = setInterval(saveStateToLocalStorage, 2000);
-        return () => clearInterval(intervalId);
+
+        saveStateToLocalStorage(); // Save whenever state changes
     }, [state]);
 
     // Load state from local storage on app load
@@ -194,7 +190,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             const parsedState = JSON.parse(savedState) as TimerState;
             dispatch({ type: 'LOAD_STATE', payload: parsedState });
         }
-    }, []);
+    }, []); // Empty dependency array to ensure this runs only once
 
     return <TimerContext.Provider value={{ state, dispatch }}>{children}</TimerContext.Provider>;
 };
